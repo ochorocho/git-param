@@ -19,6 +19,7 @@ import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.transport.URIish;
+import org.jenkinsci.plugins.gitparam.git.GitPort;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -171,7 +172,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 		if (repoUrl == null) 
 			return null;
 
-		GitPort git = new GitPort(repoUrl);
+		GitPort git = new GitPort(repoUrl).useSsh();
 		
 		List<String> contentList = null;
 		try {
@@ -181,6 +182,11 @@ public class GitParameterDefinition extends ParameterDefinition implements
 			else if (paramTypeTag.equals(PARAM_TYPE_TAG)) {
 				contentList = git.getTagList();
 			}
+			for(String s : contentList) {
+				System.out.println(s);
+			}
+			
+			
 			return toMap(contentList);
 		}
 		catch(Exception ex) {
