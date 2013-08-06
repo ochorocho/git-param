@@ -44,7 +44,7 @@ public class GitPort {
 	public List<String> getTagList() throws Exception {
 		LsRemoteCommand command = initLsRemoteCommand();
 		Collection<Ref> refs = command.setTags(true).call();
-		List<String> tagList = getItemNameList(refs, "refs/tags/", true);
+		List<String> tagList = getItemNameList(refs, "refs/tags/");
 		return tagList;
 	}
 
@@ -55,7 +55,7 @@ public class GitPort {
 	public List<String> getBranchList(boolean omitMaster) throws Exception {
 		LsRemoteCommand command = initLsRemoteCommand();
 		Collection<Ref> refs = command.setHeads(true).call();
-		List<String> branchList = getItemNameList(refs, "refs/heads/", true);
+		List<String> branchList = getItemNameList(refs, "refs/heads/");
 		if (omitMaster && branchList.contains(MASTER_NAME) && branchList.size() > 1) {
 			branchList.remove(MASTER_NAME);
 		}
@@ -83,7 +83,7 @@ public class GitPort {
 	
 	
 	private List<String> getItemNameList(Collection<Ref> refList,
-			String stringToOmit, boolean descending) {
+			String stringToOmit) {
 		if (refList == null)
 			return null;
 
@@ -91,10 +91,7 @@ public class GitPort {
 		for (Ref ref : refList) {
 			nameList.add(ref.getName().replace(stringToOmit, ""));
 		}
-		Collections.sort(nameList);
-		if (descending) {
-			Collections.reverse(nameList);
-		}
+
 		return nameList;
 	}
 

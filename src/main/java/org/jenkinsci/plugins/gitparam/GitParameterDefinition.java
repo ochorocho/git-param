@@ -9,9 +9,10 @@ import hudson.model.ParametersDefinitionProperty;
 import hudson.plugins.git.GitSCM;
 import hudson.scm.SCM;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 
 import net.sf.json.JSONArray;
@@ -20,6 +21,7 @@ import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitparam.git.GitPort;
+import org.jenkinsci.plugins.gitparam.util.StringVersionComparator;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -30,6 +32,8 @@ public class GitParameterDefinition extends ParameterDefinition implements
 
 	public static final String PARAM_TYPE_BRANCH = "PT_BRANCH";
 	public static final String PARAM_TYPE_TAG = "PT_TAG";
+	public static final String SORT_ASC = "S_ASC";
+	public static final String SORT_DESC = "S_DESC";
 
 	@Extension
 	public static class DescriptorImpl extends ParameterDescriptor {
@@ -41,12 +45,13 @@ public class GitParameterDefinition extends ParameterDefinition implements
 
 	private String type;
 	private String defaultValue;
-
+	private String sortOrder;
+	private boolean parseVersion;
+	
+	private List<String> branchList;
+	private List<String> tagList;
 	private UUID uuid;
 	private String errorMessage;
-
-	private Map<String, String> branchMap;
-	private Map<String, String> tagMap;
 
 	public String getErrorMessage() {
 		return errorMessage;
@@ -65,6 +70,22 @@ public class GitParameterDefinition extends ParameterDefinition implements
 			System.err.println(this.errorMessage);
 		}
 	}
+	
+	public String getSortOrder() {
+		return sortOrder;
+	}
+
+	public void setSortOrder(String sortOrder) {
+		this.sortOrder = sortOrder;
+	}
+
+	public boolean getParseVersion() {
+		return parseVersion;
+	}
+
+	public void setParseVersion(boolean parseVersion) {
+		this.parseVersion = parseVersion;
+	}	
 
 	public String getDefaultValue() {
 		return defaultValue;
@@ -76,12 +97,15 @@ public class GitParameterDefinition extends ParameterDefinition implements
 
 	@DataBoundConstructor
 	public GitParameterDefinition(String name, String type,
-			String defaultValue, String description) {
+			String defaultValue, String description, 
+			String sortOrder, boolean parseVersion) {
 		super(name, description);
 
 		this.type = type;
 		this.defaultValue = defaultValue;
-		this.uuid = UUID.randomUUID();
+		this.sortOrder = sortOrder;
+		this.parseVersion = parseVersion;
+		this.uuid = UUID.randomUUID(); 
 		this.errorMessage = "";
 	}
 
@@ -141,31 +165,21 @@ public class GitParameterDefinition extends ParameterDefinition implements
 		return super.getDefaultParameterValue();
 	}
 
-	public Map<String, String> getBranchMap() {
-		if (branchMap == null || branchMap.isEmpty()) {
-			branchMap = generateContents(PARAM_TYPE_BRANCH);
+	public List<String> getBranchList() {
+		if (branchList == null || branchList.isEmpty()) {
+			branchList = generateContents(PARAM_TYPE_BRANCH);
 		}
-		return branchMap;
+		return branchList;
 	}
 
-	public Map<String, String> getTagMap() {
-		if (tagMap == null || tagMap.isEmpty()) {
-			tagMap = generateContents(PARAM_TYPE_TAG);
+	public List<String> getTagList() {
+		if (tagList == null || tagList.isEmpty()) {
+			tagList = generateContents(PARAM_TYPE_TAG);
 		}
-		return tagMap;
+		return tagList;
 	}
 	
-	private Map<String, String> toMap(List<String> list) {
-		if (list == null)
-			return null;
-		Map<String,String> hm = new HashMap<String,String>();
-		for(String str : list) {
-			hm.put(str, str);
-		}
-		return hm;
-	}
-
-	private Map<String, String> generateContents(String paramTypeTag) {
+	private List<String> generateContents(String paramTypeTag) {
 		AbstractProject<?, ?> project = getCurrentProject();
 					
 		URIish repoUrl = getRepositoryUrl(project);
@@ -182,12 +196,11 @@ public class GitParameterDefinition extends ParameterDefinition implements
 			else if (paramTypeTag.equals(PARAM_TYPE_TAG)) {
 				contentList = git.getTagList();
 			}
-			for(String s : contentList) {
-				System.out.println(s);
-			}
 			
-			
-			return toMap(contentList);
+			boolean reverseComparator = this.getSortOrder().equals(SORT_DESC);
+			StringVersionComparator comparator = new StringVersionComparator(reverseComparator, getParseVersion());
+			Collections.sort(contentList, comparator);
+			return contentList;
 		}
 		catch(Exception ex) {
 			this.errorMessage = "An error occurred during getting list content. \r\n" + ex.getMessage();
