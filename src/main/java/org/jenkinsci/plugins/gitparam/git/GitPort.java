@@ -2,7 +2,6 @@ package org.jenkinsci.plugins.gitparam.git;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -20,14 +19,20 @@ import com.jcraft.jsch.JSchException;
 public class GitPort {
 
 	private static final String MASTER_NAME = "master";
+	private static final String PATH_TAGS = "refs/tags/";
+	private static final String PATH_HEADS = "refs/heads/";
+	private static final String SSH_IDENTITY = ".ssh/id_rsa";
+	private static final String SSH_KNOWN_HOSTS = ".ssh/known_hosts";
 
 	private URIish repositoryUrl;
 	private CredentialsProvider credentialsProvider;
 
 	public GitPort() {
+		setupSsh();
 	}
 
 	public GitPort(URIish repositoryUrl) {
+		this();
 		this.repositoryUrl = repositoryUrl;
 	}
 
@@ -44,7 +49,7 @@ public class GitPort {
 	public List<String> getTagList() throws Exception {
 		LsRemoteCommand command = initLsRemoteCommand();
 		Collection<Ref> refs = command.setTags(true).call();
-		List<String> tagList = getItemNameList(refs, "refs/tags/");
+		List<String> tagList = getItemNameList(refs, PATH_TAGS);
 		return tagList;
 	}
 
@@ -55,7 +60,7 @@ public class GitPort {
 	public List<String> getBranchList(boolean omitMaster) throws Exception {
 		LsRemoteCommand command = initLsRemoteCommand();
 		Collection<Ref> refs = command.setHeads(true).call();
-		List<String> branchList = getItemNameList(refs, "refs/heads/");
+		List<String> branchList = getItemNameList(refs, PATH_HEADS);
 		if (omitMaster && branchList.contains(MASTER_NAME) && branchList.size() > 1) {
 			branchList.remove(MASTER_NAME);
 		}
@@ -63,12 +68,11 @@ public class GitPort {
 	}
 
 
-	public GitPort useSsh() {
-		System.out.println("aaa");
-		return useSsh(".ssh/id_rsa", ".ssh/known_hosts");
+	private void setupSsh() {
+		setupSsh(SSH_IDENTITY, SSH_KNOWN_HOSTS);
 	}
 	
-	public GitPort useSsh(String identity, String knownHosts) {
+	private GitPort setupSsh(String identity, String knownHosts) {
 		GitPortSshSessionFactory jschConfigSessionFactory = new GitPortSshSessionFactory();
 	    JSch jsch = new JSch();
 	    try {

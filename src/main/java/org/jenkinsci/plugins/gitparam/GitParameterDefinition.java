@@ -11,8 +11,6 @@ import hudson.scm.SCM;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.UUID;
 
 import net.sf.json.JSONArray;
@@ -29,7 +27,8 @@ public class GitParameterDefinition extends ParameterDefinition implements
 		Comparable<GitParameterDefinition> {
 
 	private static final long serialVersionUID = 1183643266235305947L;
-
+	private static final String DISPLAY_NAME = "Git branch/tag parameter";
+	
 	public static final String PARAM_TYPE_BRANCH = "PT_BRANCH";
 	public static final String PARAM_TYPE_TAG = "PT_TAG";
 	public static final String SORT_ASC = "S_ASC";
@@ -39,7 +38,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 	public static class DescriptorImpl extends ParameterDescriptor {
 		@Override
 		public String getDisplayName() {
-			return "Git branch/tag parameter";
+			return DISPLAY_NAME;
 		}
 	}
 
@@ -50,11 +49,17 @@ public class GitParameterDefinition extends ParameterDefinition implements
 	
 	private List<String> branchList;
 	private List<String> tagList;
-	private UUID uuid;
 	private String errorMessage;
+	private UUID uuid;
 
 	public String getErrorMessage() {
 		return errorMessage;
+	}
+	
+	private void setErrorMessage(String errorMessage) {
+		this.errorMessage = errorMessage;
+		if (errorMessage != null && !errorMessage.equals(""))
+			System.err.println(errorMessage);
 	}
 
 	@Override
@@ -66,8 +71,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 		if (type.equals(PARAM_TYPE_BRANCH) || type.equals(PARAM_TYPE_TAG)) {
 			this.type = type;
 		} else {
-			this.errorMessage = "Wrong type";
-			System.err.println(this.errorMessage);
+			this.setErrorMessage("Wrong type");
 		}
 	}
 	
@@ -105,7 +109,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 		this.defaultValue = defaultValue;
 		this.sortOrder = sortOrder;
 		this.parseVersion = parseVersion;
-		this.uuid = UUID.randomUUID(); 
+		this.uuid = UUID.randomUUID();
 		this.errorMessage = "";
 	}
 
@@ -186,7 +190,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 		if (repoUrl == null) 
 			return null;
 
-		GitPort git = new GitPort(repoUrl).useSsh();
+		GitPort git = new GitPort(repoUrl);
 		
 		List<String> contentList = null;
 		try {
@@ -203,8 +207,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 			return contentList;
 		}
 		catch(Exception ex) {
-			this.errorMessage = "An error occurred during getting list content. \r\n" + ex.getMessage();
-			System.err.println(this.errorMessage);
+			this.setErrorMessage("An error occurred during getting list content. \r\n" + ex.getMessage());
 			return null;
 		}
 	}
@@ -219,8 +222,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 			return repoUri;
 		}
 		catch(IndexOutOfBoundsException ex) {
-			this.errorMessage = "There is no Git repository defined";
-			System.err.println(this.errorMessage);
+			this.setErrorMessage("There is no Git repository defined");
 			return null;
 		}
 	}
@@ -228,8 +230,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 	private GitSCM getGitSCM(AbstractProject<?, ?> project) {
 		SCM scm = project.getScm();
 		if (!(scm instanceof GitSCM)) {
-			this.errorMessage = "There is no Git SCM defined";
-			System.err.println(this.errorMessage);
+			this.setErrorMessage("There is no Git SCM defined");
 			return null;
 		}
 		return (GitSCM)scm;
@@ -262,7 +263,6 @@ public class GitParameterDefinition extends ParameterDefinition implements
 				}
 			}
 		}
-
 		return context;
 	}
 
