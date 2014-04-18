@@ -1,27 +1,25 @@
 package org.jenkinsci.plugins.gitparam;
 
 import hudson.Extension;
-import hudson.model.ParameterValue;
 import hudson.model.AbstractProject;
 import hudson.model.Hudson;
 import hudson.model.ParameterDefinition;
+import hudson.model.ParameterValue;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.plugins.git.GitSCM;
 import hudson.scm.SCM;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
-
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitparam.git.GitPort;
 import org.jenkinsci.plugins.gitparam.util.StringVersionComparator;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 public class GitParameterDefinition extends ParameterDefinition implements
 		Comparable<GitParameterDefinition> {
@@ -51,6 +49,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 	private List<String> tagList;
 	private String errorMessage;
 	private UUID uuid;
+    private String repositoryUrl;
 
 	public String getErrorMessage() {
 		return errorMessage;
@@ -74,8 +73,16 @@ public class GitParameterDefinition extends ParameterDefinition implements
 			this.setErrorMessage("Wrong type");
 		}
 	}
-	
-	public String getSortOrder() {
+
+    public String getRepositoryUrl() {
+        return repositoryUrl;
+    }
+
+    public void setRepositoryUrl(String repositoryUrl) {
+        this.repositoryUrl = repositoryUrl;
+    }
+
+    public String getSortOrder() {
 		return sortOrder;
 	}
 
@@ -102,7 +109,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 	@DataBoundConstructor
 	public GitParameterDefinition(String name, String type,
 			String defaultValue, String description, 
-			String sortOrder, boolean parseVersion) {
+			String sortOrder, boolean parseVersion, String repositoryUrl) {
 		super(name, description);
 
 		this.type = type;
@@ -111,6 +118,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 		this.parseVersion = parseVersion;
 		this.uuid = UUID.randomUUID();
 		this.errorMessage = "";
+        this.repositoryUrl = repositoryUrl;
 	}
 
 	public int compareTo(GitParameterDefinition o) {
@@ -185,10 +193,23 @@ public class GitParameterDefinition extends ParameterDefinition implements
 	
 	private List<String> generateContents(String paramTypeTag) {
 		AbstractProject<?, ?> project = getCurrentProject();
-					
-		URIish repoUrl = getRepositoryUrl(project);
-		if (repoUrl == null) 
+
+        URIish repoUrl = null;
+        if (this.getRepositoryUrl() == null || this.getRepositoryUrl().trim().equals("")) {
+            repoUrl = getRepositoryUrl(project);
+        } else {
+            try {
+                repoUrl = new URIish(this.getRepositoryUrl());
+            }
+            catch(Exception ex) {
+                this.setErrorMessage("An error occurred during parsing repo URL. \r\n" + ex.getMessage());
+                return null;
+            }
+        }
+
+		if (repoUrl == null) {
 			return null;
+        }
 
 		GitPort git = new GitPort(repoUrl);
 		
