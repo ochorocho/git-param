@@ -19,7 +19,13 @@
                     <select name="value" style="width: 150px; border: 1px solid #ccc;">
             		<j:forEach var="val" items="${it.branchMap}" >
                             <j:choose>
-                                <option value="${val.key}">${val.value}</option>
+
+								<j:if test="${val.key=='master'}">
+									<option selected="selected" value="${val.key}">${val.value}</option>
+								</j:if>
+								<j:if test="${val.key!='master'}">
+									<option value="${val.key}">${val.value}</option>
+								</j:if>
                             </j:choose>
                         </j:forEach>  
                     </select>

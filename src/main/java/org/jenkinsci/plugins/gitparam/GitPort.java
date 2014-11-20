@@ -52,9 +52,11 @@ public class GitPort {
 		LsRemoteCommand command = initLsRemoteCommand();
 		Collection<Ref> refs = command.setHeads(true).call();
 		List<String> branchList = getItemNameList(refs, "refs/heads/", true);
+		/*
 		if (omitMaster && branchList.contains(MASTER_NAME) && branchList.size() > 1) {
 			branchList.remove(MASTER_NAME);
 		}
+		*/
 		return branchList;
 	}
 
