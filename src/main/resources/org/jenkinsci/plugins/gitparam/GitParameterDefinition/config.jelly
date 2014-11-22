@@ -50,4 +50,12 @@
     <f:textbox />
   </f:entry>
 
+  <f:entry title="Hide 'master' Branch" field="omitMaster">
+    <f:checkbox />
+  </f:entry>
+ 
+  <f:entry title="Height of select field" field="selectView">
+    <f:textbox />
+  </f:entry>
+
 </j:jelly>

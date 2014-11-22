@@ -44,6 +44,8 @@ public class GitParameterDefinition extends ParameterDefinition implements
 	private String defaultValue;
 	private String sortOrder;
 	private boolean parseVersion;
+	private boolean omitMaster;
+	private String selectView;
 	
 	private List<String> branchList;
 	private List<String> tagList;
@@ -98,6 +100,24 @@ public class GitParameterDefinition extends ParameterDefinition implements
 		this.parseVersion = parseVersion;
 	}	
 
+// JRO
+	public boolean getOmitMaster() {
+		return omitMaster;
+	}
+
+	public void setOmitMaster(boolean omitMaster) {
+		this.omitMaster = omitMaster;
+	}
+
+	public String getSelectView() {
+		return selectView;
+	}
+	
+	public void setSelectView(String selectView) {
+		this.selectView = selectView;
+	}
+// JRO END
+
 	public String getDefaultValue() {
 		return defaultValue;
 	}
@@ -109,13 +129,15 @@ public class GitParameterDefinition extends ParameterDefinition implements
 	@DataBoundConstructor
 	public GitParameterDefinition(String name, String type,
 			String defaultValue, String description, 
-			String sortOrder, boolean parseVersion, String repositoryUrl) {
+			String sortOrder, boolean parseVersion, boolean omitMaster, String selectView, String repositoryUrl) {
 		super(name, description);
 
 		this.type = type;
 		this.defaultValue = defaultValue;
 		this.sortOrder = sortOrder;
 		this.parseVersion = parseVersion;
+		this.omitMaster = omitMaster;
+		this.selectView = selectView;
 		this.uuid = UUID.randomUUID();
 		this.errorMessage = "";
         this.repositoryUrl = repositoryUrl;
