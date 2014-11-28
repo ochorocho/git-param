@@ -1,5 +1,20 @@
 package org.jenkinsci.plugins.gitparam;
 
+import hudson.model.Item;
+import hudson.plugins.git.GitStatus;
+import hudson.security.ACL;
+import org.jenkinsci.plugins.gitclient.GitClient;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.URIRequirementBuilder;
+import org.eclipse.jgit.transport.RefSpec;
+
+import jenkins.scm.api.SCMSource;
+import jenkins.scm.api.SCMSourceDescriptor;
+import jenkins.scm.api.SCMSourceOwner;
+import jenkins.scm.api.SCMSourceOwners;
+
 import hudson.Extension;
 import hudson.model.AbstractProject;
 import hudson.model.Hudson;
@@ -21,6 +36,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import org.kohsuke.stapler.AncestorInPath;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerResponse;
+
+import java.io.PrintWriter;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Logger;
+import org.jenkinsci.plugins.gitclient.GitClient;
+
 public class GitParameterDefinition extends ParameterDefinition implements
 		Comparable<GitParameterDefinition> {
 
@@ -31,6 +60,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 	public static final String PARAM_TYPE_TAG = "PT_TAG";
 	public static final String SORT_ASC = "S_ASC";
 	public static final String SORT_DESC = "S_DESC";
+
 
 	@Extension
 	public static class DescriptorImpl extends ParameterDescriptor {
@@ -129,7 +159,8 @@ public class GitParameterDefinition extends ParameterDefinition implements
 	@DataBoundConstructor
 	public GitParameterDefinition(String name, String type,
 			String defaultValue, String description, 
-			String sortOrder, boolean parseVersion, boolean omitMaster, String selectView, String repositoryUrl) {
+			String sortOrder, boolean parseVersion, boolean omitMaster, String selectView,
+			String repositoryUrl) {
 		super(name, description);
 
 		this.type = type;
@@ -141,6 +172,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 		this.uuid = UUID.randomUUID();
 		this.errorMessage = "";
         this.repositoryUrl = repositoryUrl;
+
 	}
 
 	public int compareTo(GitParameterDefinition o) {
@@ -262,6 +294,24 @@ public class GitParameterDefinition extends ParameterDefinition implements
 		URIish repoUri = null;
 		try {
 			repoUri = gitScm.getRepositories().get(0).getURIs().get(0);
+			for (hudson.plugins.git.UserRemoteConfig uc : gitScm.getUserRemoteConfigs()) { // DZI
+				if (uc.getCredentialsId() != null) {
+					String url = uc.getUrl();
+					StandardUsernamePasswordCredentials credentials = CredentialsMatchers.firstOrNull(
+						    CredentialsProvider.lookupCredentials(
+						    		StandardUsernamePasswordCredentials.class, project, ACL.SYSTEM,
+						    		URIRequirementBuilder.fromUri(url).build()
+						    ),
+					        CredentialsMatchers.allOf(
+					        		CredentialsMatchers.withId(uc.getCredentialsId()), GitClient.CREDENTIALS_MATCHER
+					        )
+					    );
+					if (credentials != null) {
+						repoUri = repoUri.setUser(credentials.getUsername());
+						repoUri = repoUri.setPass(credentials.getPassword().getPlainText());
+					}
+				}
+			} // DZI
 			return repoUri;
 		}
 		catch(IndexOutOfBoundsException ex) {
