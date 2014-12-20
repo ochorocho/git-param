@@ -11,4 +11,4 @@ Features
 - Show/hide master branch
 - Height of select field
 
-Depends on GIT Plugin (ID [git](https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin))
+Depends on GIT-Plugin (ID [git](https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin))
