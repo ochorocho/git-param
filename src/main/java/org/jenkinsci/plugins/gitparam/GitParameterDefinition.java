@@ -41,6 +41,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.export.ExportedBean;
+import org.kohsuke.stapler.export.Exported;
 
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
@@ -55,6 +57,7 @@ public class GitParameterDefinition extends ParameterDefinition implements
 
 	private static final long serialVersionUID = 1183643266235305947L;
 	private static final String DISPLAY_NAME = "Git branch/tag parameter";
+	private static final Logger LOG = Logger.getLogger(GitParameterDefinition.class.getName());
 	
 	public static final String PARAM_TYPE_BRANCH = "PT_BRANCH";
 	public static final String PARAM_TYPE_TAG = "PT_TAG";
@@ -95,10 +98,15 @@ public class GitParameterDefinition extends ParameterDefinition implements
 
 	@Override
 	public String getType() {
-		return type;
+        // pretending a choice parameter to support some external IDE plugins
+		return "ChoiceParameterDefinition";
 	}
 
-	public void setType(String type) {
+    public String getParamType() {
+        return type;
+    }
+
+	public void setParamType(String type) {
 		if (type.equals(PARAM_TYPE_BRANCH) || type.equals(PARAM_TYPE_TAG)) {
 			this.type = type;
 		} else {
@@ -191,7 +199,10 @@ public class GitParameterDefinition extends ParameterDefinition implements
 		if (values == null) {
 			return getDefaultParameterValue();
 		}
-		return null;
+		// first parameter value wins
+		GitParameterValue gitParameterValue = new GitParameterValue(
+                getName(), values[0]);
+        return gitParameterValue;
 	}
 
 	/*
@@ -244,6 +255,27 @@ public class GitParameterDefinition extends ParameterDefinition implements
 		}
 		return tagList;
 	}
+	/*
+	  API method pretending a choice parameter to support some external IDE plugins
+	 */
+    @Exported
+    public List<String> getChoices() {
+        List<String> contentList = null;
+        try {
+            if (this.getParamType().equals(PARAM_TYPE_BRANCH)) {
+                contentList = this.getBranchList();
+            }
+            else if (this.getParamType().equals(PARAM_TYPE_TAG)) {
+                contentList = this.getTagList();
+            }
+            return contentList;
+        }
+        catch(Exception ex) {
+            this.errorMessage = "An error occurred during getting list content. \r\n" + ex.getMessage();
+            System.err.println(this.errorMessage);
+            return null;
+        }
+    }
 	
 	private List<String> generateContents(String paramTypeTag) {
 		AbstractProject<?, ?> project = getCurrentProject();
